@@ -552,53 +552,47 @@ tr:hover td{background:rgba(10,99,46,0.04);}
   <div id="viewMain">
 
   <!-- KPI Grid -->
-  <div class="tnps-grid">
+  <div class="stats-grid">
     <!-- TNPS del Día -->
     <div class="tnps-card day-card">
-        <div>
-          <div class="tc-label"><span class="tc-ico">☀️</span>TNPS del Día (Equipo)</div>
-          <div class="tc-val" id="tnpsDay">—</div>
-          <div class="tc-sub">
-            <span class="tc-sub-item prom"><strong id="dayP">0</strong> Promotores</span>
-            <span class="tc-sub-item pas"><strong id="dayPas">0</strong> Pasivos</span>
-            <span class="tc-sub-item det"><strong id="dayD">0</strong> Detractores</span>
-          </div>
-        </div>
-        <div>
-          <div class="progress-bar-wrap">
-            <div class="pb-seg prom" id="pbDayP"></div>
-            <div class="pb-seg pas" id="pbDayPas"></div>
-            <div class="pb-seg det" id="pbDayD"></div>
-          </div>
-          <div class="tc-footer">
-            <span>Encuestas: <strong id="dayN">0</strong></span>
-            <span>Llamadas Atendidas: <strong id="dayAtendidas">0</strong></span>
-          </div>
-        </div>
+      <div class="tc-label"><span class="tc-ico">☀️</span>TNPS del Día (Equipo)</div>
+      <div class="tc-main">
+        <div class="tc-num" id="tnpsDay" style="--cv:var(--accent)">—</div>
+        <div class="tc-unit">%</div>
+      </div>
+      <div class="tc-pills">
+        <span class="pill p">⭐ <span id="dayP">0</span> prom.</span>
+        <span class="pill pas">→ <span id="dayPas">0</span> neut.</span>
+        <span class="pill d">⚠ <span id="dayD">0</span> det.</span>
+        <span class="pill t">📋 <span id="dayN">0</span> enc.</span>
+        <span class="pill atend">📞 <span id="dayAtendidas">0</span> atend.</span>
+      </div>
+      <div class="progress-bar">
+        <div class="pb-p" id="pbDayP" style="width:0%"></div>
+        <div class="pb-pas" id="pbDayPas" style="width:0%"></div>
+        <div class="pb-d" id="pbDayD" style="width:0%"></div>
+      </div>
     </div>
 
     <!-- TNPS del Mes -->
     <div class="tnps-card mes-card">
-        <div>
-          <div class="tc-label"><span class="tc-ico">📅</span>TNPS Acumulado · Mes (Equipo)</div>
-          <div class="tc-val" id="tnpsMes">—</div>
-          <div class="tc-sub">
-            <span class="tc-sub-item prom"><strong id="mesP">0</strong> Promotores</span>
-            <span class="tc-sub-item pas"><strong id="mesPas">0</strong> Pasivos</span>
-            <span class="tc-sub-item det"><strong id="mesD">0</strong> Detractores</span>
-          </div>
-        </div>
-        <div>
-          <div class="progress-bar-wrap">
-            <div class="pb-seg prom" id="pbMesP"></div>
-            <div class="pb-seg pas" id="pbMesPas"></div>
-            <div class="pb-seg det" id="pbMesD"></div>
-          </div>
-          <div class="tc-footer">
-            <span>Encuestas: <strong id="mesN">0</strong></span>
-            <span>Llamadas Atendidas: <strong id="mesAtendidas">0</strong></span>
-          </div>
-        </div>
+      <div class="tc-label"><span class="tc-ico">📅</span>TNPS Acumulado · Mes (Equipo)</div>
+      <div class="tc-main">
+        <div class="tc-num" id="tnpsMes" style="--cv:var(--green)">—</div>
+        <div class="tc-unit">%</div>
+      </div>
+      <div class="tc-pills">
+        <span class="pill p">⭐ <span id="mesP">0</span> prom.</span>
+        <span class="pill pas">→ <span id="mesPas">0</span> neut.</span>
+        <span class="pill d">⚠ <span id="mesD">0</span> det.</span>
+        <span class="pill t">📋 <span id="mesN">0</span> enc.</span>
+        <span class="pill atend">📞 <span id="mesAtendidas">0</span> atend.</span>
+      </div>
+      <div class="progress-bar">
+        <div class="pb-p" id="pbMesP" style="width:0%"></div>
+        <div class="pb-pas" id="pbMesPas" style="width:0%"></div>
+        <div class="pb-d" id="pbMesD" style="width:0%"></div>
+      </div>
     </div>
 
     <!-- Derivaciones -->
@@ -1027,7 +1021,7 @@ function yyyymmddToShortDate(ymd) {
 
 function clasificarNPS(score) {
   if (score >= 9) return 'Promotor';
-  if (score >= 7) return 'Pasivo';
+  if (score >= 7) return 'Neutro';
   return 'Detractor';
 }
 
@@ -1195,7 +1189,7 @@ async function inicializarDatos() {
       if (tipo === 'Promotor') {
         a.mes.prom++;
         if (esHoy) a.dia.prom++;
-      } else if (tipo === 'Pasivo') {
+      } else if (tipo === 'Neutro' || tipo === 'Pasivo') {
         a.mes.pas++;
         if (esHoy) a.dia.pas++;
       } else {
@@ -1208,7 +1202,7 @@ async function inicializarDatos() {
       }
       a.dailyMetrics[fechaInt].total++;
       if (tipo === 'Promotor') a.dailyMetrics[fechaInt].prom++;
-      else if (tipo === 'Pasivo') a.dailyMetrics[fechaInt].pas++;
+      else if (tipo === 'Neutro' || tipo === 'Pasivo') a.dailyMetrics[fechaInt].pas++;
       else a.dailyMetrics[fechaInt].det++;
 
       if (supervisor) {
@@ -1218,7 +1212,7 @@ async function inicializarDatos() {
         if (tipo === 'Promotor') {
           supervisor.mes.prom++;
           if (esHoy) supervisor.dia.prom++;
-        } else if (tipo === 'Pasivo') {
+        } else if (tipo === 'Neutro' || tipo === 'Pasivo') {
           supervisor.mes.pas++;
           if (esHoy) supervisor.dia.pas++;
         } else {
@@ -1231,7 +1225,7 @@ async function inicializarDatos() {
         }
         supervisor.trendMap[fechaInt].total++;
         if (tipo === 'Promotor') supervisor.trendMap[fechaInt].prom++;
-        else if (tipo === 'Pasivo') supervisor.trendMap[fechaInt].pas++;
+        else if (tipo === 'Neutro' || tipo === 'Pasivo') supervisor.trendMap[fechaInt].pas++;
         else supervisor.trendMap[fechaInt].det++;
       }
     });
