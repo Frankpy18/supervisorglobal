@@ -1172,7 +1172,7 @@ async function inicializarDatos() {
       }
 
       const cortadaPor = row[COL_CORTADA_POR]?.trim().toUpperCase() || '';
-      if (['CLIENTE', 'NO CLIENTE', 'AGENTE'].includes(cortadaPor) || (cortadaPor.length > 0 && cortadaPor !== '-')) {
+      if (['CLIENTE', 'NO CLIENTE', 'AGENTE'].includes(cortadaPor)) {
         a.mes.cortes++;
         if (supervisor) supervisor.mes.cortes++;
         if (esHoy) {
