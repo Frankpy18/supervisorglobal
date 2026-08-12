@@ -604,17 +604,23 @@ tr:hover td{background:rgba(10,99,46,0.04);}
     <!-- Derivaciones -->
     <div class="tnps-card derivadas-card">
       <div>
-        <div class="tc-label"><span class="tc-ico">📢</span>Derivación a Encuestas</div>
-        <div class="tc-sec-title">Total derivadas (Meta TX: <span class="meta-tx-val">80</span>%):</div>
+        <div class="tc-label"><span class="tc-ico">📢</span>Tasa de Transferencia (% TX)</div>
+        <div class="tc-sec-title">Transferencia a encuesta (Meta TX: <span class="meta-tx-val">80</span>%):</div>
       </div>
       <div>
         <div class="tc-sec-row">
           <span>Hoy</span>
-          <span class="tc-sec-val" id="dayDerivadas" style="color:var(--blue)">0</span>
+          <div style="text-align:right;">
+            <span class="tc-sec-val" id="dayDerivadas" style="color:var(--blue)">—</span>
+            <div id="dayDerivadasDetail" style="font-size:10px; color:var(--muted2);">Derivadas: 0 | Cortes: 0</div>
+          </div>
         </div>
-        <div class="tc-sec-row">
+        <div class="tc-sec-row" style="margin-top:6px;">
           <span>Acumulado del Mes</span>
-          <span class="tc-sec-val" id="mesDerivadas" style="color:var(--blue)">0</span>
+          <div style="text-align:right;">
+            <span class="tc-sec-val" id="mesDerivadas" style="color:var(--blue)">—</span>
+            <div id="mesDerivadasDetail" style="font-size:10px; color:var(--muted2);">Derivadas: 0 | Cortes: 0</div>
+          </div>
         </div>
       </div>
     </div>
@@ -686,12 +692,14 @@ tr:hover td{background:rgba(10,99,46,0.04);}
           <thead>
             <tr id="analysisHeader">
               <th class="sortable" data-col="nombre" style="min-width:160px;">Asesor</th>
-              <th class="sortable" data-col="cortes" style="text-align:center;width:100px;">Cortes Cliente</th>
-              <th class="sortable" data-col="tnps" style="text-align:center;width:100px;">TNPS Hoy</th>
-              <th class="sortable" data-col="mediana" style="text-align:center;width:150px;">TNPS Mín. Obj. (Mediana)</th>
-              <th class="sortable" data-col="gap" style="text-align:center;width:120px;">Gap vs Mediana</th>
-              <th class="sortable" data-col="promMeta" style="text-align:center;width:160px;">Prom. para Meta <span class="meta-tnps-val">82</span>%</th>
-              <th class="sortable" data-col="promMediana" style="text-align:center;width:160px;">Prom. para Mediana</th>
+              <th class="sortable" data-col="cortes" style="text-align:center;width:80px;">Cortes</th>
+              <th class="sortable" data-col="derivadas" style="text-align:center;width:80px;">Derivadas</th>
+              <th class="sortable" data-col="tx" style="text-align:center;width:95px;">% TX Hoy</th>
+              <th class="sortable" data-col="tnps" style="text-align:center;width:95px;">TNPS Hoy</th>
+              <th class="sortable" data-col="mediana" style="text-align:center;width:140px;">TNPS Mín. Obj. (Mediana)</th>
+              <th class="sortable" data-col="gap" style="text-align:center;width:110px;">Gap vs Mediana</th>
+              <th class="sortable" data-col="promMeta" style="text-align:center;width:150px;">Prom. p/ Meta <span class="meta-tnps-val">82</span>%</th>
+              <th class="sortable" data-col="promMediana" style="text-align:center;width:150px;">Prom. p/ Mediana</th>
             </tr>
           </thead>
           <tbody id="analysisBody">
@@ -1151,7 +1159,7 @@ async function inicializarDatos() {
       }
 
       const descTrans = row[COL_DESCRIPCION_TRANSFERENCIA]?.trim() || '';
-      if (descTrans.includes('PeruClaro_SatisfacationSurvey')) {
+      if (/(PeruClaro_Satisfa|SatisfactionSurvey|encuesta)/i.test(descTrans)) {
         a.mes.derivadas++;
         if (supervisor) supervisor.mes.derivadas++;
         if (esHoy) {
@@ -1161,7 +1169,7 @@ async function inicializarDatos() {
       }
 
       const cortadaPor = row[COL_CORTADA_POR]?.trim().toUpperCase() || '';
-      if (cortadaPor === 'CLIENTE') {
+      if (['CLIENTE', 'NO CLIENTE', 'AGENTE'].includes(cortadaPor) || (cortadaPor.length > 0 && cortadaPor !== '-')) {
         a.mes.cortes++;
         if (supervisor) supervisor.mes.cortes++;
         if (esHoy) {
@@ -1295,6 +1303,19 @@ function tnpsColor(v) {
   return 'var(--red)';
 }
 
+function calcTX(derivadas, cortes) {
+  const cd = (derivadas || 0) + (cortes || 0);
+  if (cd === 0) return null;
+  return (derivadas / cd) * 100;
+}
+
+function txColor(v) {
+  if (v === null || v === undefined || isNaN(v)) return 'var(--muted2)';
+  if (v >= activeCampaign.metaTx) return 'var(--green)';
+  if (v >= activeCampaign.metaTx - 10) return 'var(--yellow)';
+  return 'var(--red)';
+}
+
 function buscar() {
   const raw = document.getElementById('userInput').value.trim().toUpperCase();
   const errEl = document.getElementById('errMsg');
@@ -1351,9 +1372,26 @@ function renderDash() {
     ['pbMesP','pbMesPas','pbMesD'].forEach(id => document.getElementById(id).style.width = '0%');
   }
 
-  // ── Derivaciones & Cortes ───────────────────────────────────────────────
-  document.getElementById('dayDerivadas').textContent = dia.derivadas;
-  document.getElementById('mesDerivadas').textContent = mes.derivadas;
+  // ── Derivaciones & Cortes (% TX) ─────────────────────────────────────────
+  const dayTx = calcTX(dia.derivadas, dia.cortes);
+  const mesTx = calcTX(mes.derivadas, mes.cortes);
+
+  const dayDerivEl = document.getElementById('dayDerivadas');
+  if (dayDerivEl) {
+    dayDerivEl.textContent = dayTx !== null ? `${dayTx.toFixed(1)}%` : '—';
+    dayDerivEl.style.color = txColor(dayTx);
+  }
+  const dayDerivDetail = document.getElementById('dayDerivadasDetail');
+  if (dayDerivDetail) dayDerivDetail.textContent = `Derivadas: ${dia.derivadas} | Cortes: ${dia.cortes}`;
+
+  const mesDerivEl = document.getElementById('mesDerivadas');
+  if (mesDerivEl) {
+    mesDerivEl.textContent = mesTx !== null ? `${mesTx.toFixed(1)}%` : '—';
+    mesDerivEl.style.color = txColor(mesTx);
+  }
+  const mesDerivDetail = document.getElementById('mesDerivadasDetail');
+  if (mesDerivDetail) mesDerivDetail.textContent = `Derivadas: ${mes.derivadas} | Cortes: ${mes.cortes}`;
+
   document.getElementById('dayCortes').textContent = dia.cortes;
   document.getElementById('mesCortes').textContent = mes.cortes;
 
@@ -1563,15 +1601,18 @@ function renderAnalysisTable() {
   body.innerHTML = '';
 
   if (!s || !s.asesores || s.asesores.length === 0) {
-    body.innerHTML = '<tr><td colspan="7" class="no-data-msg">No hay asesores asignados.</td></tr>';
+    body.innerHTML = '<tr><td colspan="9" class="no-data-msg">No hay asesores asignados.</td></tr>';
     return;
   }
 
   let list = s.asesores.map(a => {
+    const txHoy = calcTX(a.dia.derivadas, a.dia.cortes);
     return {
       a,
       nombre: a.nombre,
       cortes: a.dia.cortes || 0,
+      derivadas: a.dia.derivadas || 0,
+      tx: txHoy,
       tnps: a.dia.tnps,
       mediana: a.medianaTnps,
       gap: a.gapMediana,
@@ -1600,7 +1641,14 @@ function renderAnalysisTable() {
     return analysisSortDir * (va - vb);
   });
 
-  list.forEach(({ a, cortes, tnps, mediana, gap, promMeta, promMediana, enc }) => {
+  list.forEach(({ a, cortes, derivadas, tx, tnps, mediana, gap, promMeta, promMediana, enc }) => {
+    let txStr = '—';
+    let txColVal = 'var(--muted2)';
+    if (tx !== null) {
+      txStr = tx.toFixed(1) + '%';
+      txColVal = txColor(tx);
+    }
+
     let tnpsStr = '—';
     let tnpsClass = 'none';
     if (enc > 0 && tnps !== null) {
@@ -1643,6 +1691,8 @@ function renderAnalysisTable() {
         <span class="rank-id">${a.usuario}</span>
       </td>
       <td style="${mono}color:var(--red);">${cortes}</td>
+      <td style="${mono}color:var(--blue);">${derivadas}</td>
+      <td style="${mono}color:${txColVal};">${txStr}</td>
       <td style="text-align:center;"><span class="rank-tnps ${tnpsClass}">${tnpsStr}</span></td>
       <td style="${mono}color:var(--accent);">${medianaStr}</td>
       <td style="${mono}color:${gapColor};">${gapStr}</td>
