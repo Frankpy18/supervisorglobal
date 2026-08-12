@@ -1306,10 +1306,10 @@ function tnpsColor(v) {
   return 'var(--red)';
 }
 
-function calcTX(derivadas, cortes) {
-  const cd = (derivadas || 0) + (cortes || 0);
-  if (cd === 0) return null;
-  return (derivadas / cd) * 100;
+function calcTX(derivadasEncuesta, cortes) {
+  const totalDerivacionesYCortes = (derivadasEncuesta || 0) + (cortes || 0);
+  if (totalDerivacionesYCortes === 0) return null;
+  return (derivadasEncuesta / totalDerivacionesYCortes) * 100;
 }
 
 function txColor(v) {
